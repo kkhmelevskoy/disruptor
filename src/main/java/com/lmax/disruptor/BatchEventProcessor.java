@@ -121,7 +121,24 @@ public final class BatchEventProcessor<T>
             {
                 try
                 {
-                    final long availableSequence = sequenceBarrier.waitFor(nextSequence);
+                    final long availableSequence;
+                    int batchSize;
+                    if (eventHandler instanceof BatchEventHandler)
+                    {
+                        batchSize = ((BatchEventHandler<?>) eventHandler).getBatchSize();
+                    }
+                    else
+                    {
+                        batchSize = 0;
+                    }
+                    if (batchSize > 0)
+                    {
+                        availableSequence = Math.min(sequenceBarrier.waitFor(nextSequence), nextSequence + batchSize - 1);
+                    }
+                    else
+                    {
+                        availableSequence = sequenceBarrier.waitFor(nextSequence);
+                    }
 
                     while (nextSequence <= availableSequence)
                     {
